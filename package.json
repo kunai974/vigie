@@ -1,0 +1,26 @@
+{
+  "name": "vigie",
+  "version": "0.9.0",
+  "description": "Vigie, l'audit d'affichage qui prouve ses corrections : captures, mesures et revue de l'affichage et du responsive d'une app (web, Android, bureau), corrections prouvées par un avant / après.",
+  "license": "MIT",
+  "author": "kunai974",
+  "private": true,
+  "type": "module",
+  "main": "cli.mjs",
+  "bin": { "vigie": "cli.mjs" },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "vitest run test",
+    "exemple": "node . passage --app exemple",
+    "revue": "node . revue"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.63.0",
+    "axe-core": "^4.13.0",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.16"
+  }
+}

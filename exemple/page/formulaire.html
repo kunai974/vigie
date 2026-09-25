@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exemple : connexion</title>
+<!-- Page d'exemple : formulaire correct. Le bouton « œil » posé dans le champ mot de passe est voulu :
+     l'outil ne doit pas le signaler comme un chevauchement. -->
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f6f6f4; color: #1d1d1b; display: grid; place-items: center; min-height: 100vh; }
+  form { background: #fff; padding: 24px; border-radius: 12px; display: grid; gap: 12px; width: min(360px, calc(100vw - 32px)); box-sizing: border-box; }
+  label { display: grid; gap: 4px; }
+  input { font: inherit; padding: 12px; border: 1px solid #bbb; border-radius: 8px; width: 100%; box-sizing: border-box; }
+  .mdp { position: relative; }
+  .mdp input { padding-right: 52px; }
+  .oeil { position: absolute; right: 2px; top: 2px; width: 44px; height: 44px; border: 0; background: transparent; }
+  /* Lien discret avec une zone tactile invisible de 44 px (pseudo-élément) : ni zone trop petite, ni
+     « texte qui dépasse » (la marge invisible n'est pas du texte). */
+  .oubli { position: relative; justify-self: start; font-size: 0.875rem; color: #1d4ed8; }
+  .oubli::after { content: ""; position: absolute; inset: -0.75rem -0.25rem; }
+  button[type=submit] { padding: 12px; border: 0; border-radius: 8px; background: #1d4ed8; color: #fff; font: inherit; }
+</style>
+<form onsubmit="return false">
+  <label>Adresse e-mail <input id="email" type="email" autocomplete="off"></label>
+  <label>Mot de passe <span class="mdp"><input id="motdepasse" type="password" autocomplete="off"><button type="button" class="oeil" aria-label="Afficher le mot de passe">👁</button></span></label>
+  <a class="oubli" href="#">Mot de passe oublié ?</a>
+  <button type="submit">Se connecter</button>
+</form>
+</html>

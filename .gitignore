@@ -1,0 +1,4 @@
+# Dépendances de l'outil (npm install dans ce dossier)
+node_modules/
+# Registre créé par un passage d'essai sur l'app d'exemple
+exemple/registre.json

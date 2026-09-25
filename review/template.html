@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revue d'audit __APP__</title>
+<style>
+/*__THEME__*/
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 0.86rem; }
+.progress { display: grid; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.progress-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.bar { height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; display: flex; }
+.bar span { display: block; height: 100%; }
+.filters { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 0; background: var(--bg); border-bottom: 1px solid var(--line); }
+.filters label { display: flex; gap: 6px; align-items: center; font-size: 0.84rem; color: var(--muted); }
+.filters select { font-size: 0.86rem; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); max-width: 220px; }
+.filters .shown { margin-left: auto; }
+.family { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.fam-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.fam-head h3 { font-size: 1.08rem; }
+.advice { background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; color: var(--soft); font-size: 0.9rem; }
+.advice b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+.fam-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: 0.84rem; }
+.items { display: grid; gap: 10px; }
+.item { display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 1fr) minmax(0, 230px); gap: 14px; align-items: start; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.item[data-status="inclure"] { border-color: var(--ok); }
+.item[data-status="plus-tard"] { border-color: var(--later); }
+.item[data-status="exclure"] { opacity: 0.6; }
+@media (max-width: 860px) { .item { grid-template-columns: minmax(0, 1fr); } .shots { max-width: 320px; } }
+.shots { display: flex; flex-wrap: wrap; gap: 6px; }
+.shots figure { margin: 0; display: grid; gap: 2px; flex: 1 1 100%; }
+.shots figure.phone { flex: 0 1 108px; }
+.shots figcaption { font-size: 0.72rem; color: var(--muted); }
+.thumb .none { aspect-ratio: 16 / 9; display: grid; place-items: center; color: #c2c8d0; font-size: 0.76rem; padding: 8px; text-align: center; }
+.thumb.phone .none { aspect-ratio: 9 / 16; }
+.box { position: absolute; border: 2px solid #ff4d5e; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); pointer-events: none; }
+.box.warning { border-color: #ffb020; }
+.it-body { display: grid; gap: 5px; min-width: 0; }
+.it-name { font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.it-msg { color: var(--soft); font-size: 0.9rem; }
+.it-where, .it-prio { color: var(--muted); font-size: 0.82rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.plat { font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+.pill { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.bloquant { color: var(--err); } .pill.important { color: var(--warn); } .pill.mineur { color: var(--soft); } .pill.a-trancher { color: var(--later); } .pill.info { color: var(--muted); }
+.pill.prio { border-style: dashed; color: var(--soft); } .pill.prio.forte { color: var(--err); } .pill.prio.moyenne { color: var(--warn); }
+.pill.st { border-color: var(--line); color: var(--muted); }
+.pill.st.nouveau { color: var(--accent); border-color: currentColor; } .pill.st.reapparu { color: var(--err); border-color: currentColor; }
+.pill.etat { color: var(--ok); } .pill.etat.verifier { color: var(--warn); }
+.it-advice { color: var(--soft); font-size: 0.86rem; white-space: pre-line; }
+.verdict { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.verdict p { font-size: 0.88rem; color: var(--soft); white-space: pre-line; }
+.verdict b { display: block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.verdict .reco { color: var(--ink); }
+.dec { display: grid; gap: 6px; }
+.dec-btns { display: flex; flex-wrap: wrap; gap: 5px; }
+.opt { font-size: 0.84rem; border-radius: 8px; padding: 5px 10px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); }
+.opt[data-v="inclure"][aria-pressed="true"] { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 18%, var(--panel)); font-weight: 600; }
+.opt[data-v="plus-tard"][aria-pressed="true"] { border-color: var(--later); background: color-mix(in srgb, var(--later) 18%, var(--panel)); font-weight: 600; }
+.opt[data-v="exclure"][aria-pressed="true"] { border-color: var(--out); background: color-mix(in srgb, var(--out) 22%, var(--panel)); font-weight: 600; }
+.opt:disabled { opacity: 0.5; cursor: not-allowed; }
+.mixed { font-size: 0.78rem; color: var(--warn); }
+textarea { width: 100%; font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; min-height: 2.3em; resize: vertical; }
+.fixed-list { display: grid; gap: 4px; color: var(--soft); font-size: 0.9rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font-weight: 600; font-size: 0.92rem; color: var(--soft); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.compare { overflow-x: auto; }
+.compare table { border-collapse: separate; border-spacing: 8px; min-width: 100%; }
+.compare th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.84rem; white-space: nowrap; }
+.compare td { vertical-align: top; }
+.compare td.name { color: var(--soft); font-size: 0.86rem; min-width: 150px; max-width: 200px; }
+.compare .thumb { width: 130px; }
+.compare.tv .thumb, .compare.desktop .thumb, .compare.web .thumb { width: 240px; }
+.path-sizes { display: flex; flex-wrap: wrap; gap: 6px; }
+.path-meta { color: var(--muted); font-size: 0.84rem; }
+.path-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.path-grid figure { margin: 0; display: grid; gap: 4px; width: 150px; align-content: start; }
+.path-grid.tv figure, .path-grid.desktop figure, .path-grid.web figure { width: 250px; }
+.path-grid figure.same .thumb { opacity: 0.45; }
+.path-grid figcaption { color: var(--soft); font-size: 0.78rem; overflow-wrap: anywhere; }
+.path-grid figcaption i { color: var(--muted); font-style: normal; display: block; }
+.path-grid figcaption .n { color: var(--warn); }
+.path-grid figure.missing { color: var(--warn); font-size: 0.8rem; border: 1px dashed var(--line); border-radius: 8px; padding: 8px; }
+.skipped { color: var(--soft); font-size: 0.9rem; display: grid; gap: 4px; }
+.skipped b { color: var(--warn); font-weight: 500; }
+.thumb.grand { width: auto; }
+.thumb.grand img { display: block; max-width: 96vw; max-height: 86vh; width: auto; height: auto; }
+.notes { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">__APP__ · revue de l'audit d'affichage</span>
+    <h1 id="title">Revue d'audit</h1>
+    <p class="lede">Une fiche par défaut, même s'il se voit sur plusieurs écrans, tailles ou plateformes. Choisissez <em>Inclure</em> (à corriger), <em>Plus tard</em> ou <em>Exclure</em>, ajoutez une remarque si besoin : rien n'est corrigé sans votre décision.</p>
+    <div class="legend"><span><span class="pill bloquant">Bloquant</span> empêche d'utiliser l'écran</span><span><span class="pill important">Important</span> se voit et gêne</span><span><span class="pill mineur">Mineur</span> gêne peu</span><span><span class="pill a-trancher">À trancher</span> question de conception</span></div>
+    <div class="legend"><span><span class="pill prio forte">Priorité forte</span> <span class="pill prio moyenne">moyenne</span> <span class="pill prio faible">faible</span> : ordre de correction recommandé (gravité, étendue, effort)</span><span>Touchez une capture pour l'agrandir</span></div>
+    <div class="progress" aria-live="polite">
+      <div class="progress-row"><strong id="count">…</strong><span class="count" id="dbstate">Connexion à l'enregistrement…</span><button type="button" class="opt" id="export">Exporter mes décisions</button><button type="button" class="opt" id="done" hidden>J'ai terminé</button></div>
+      <div class="bar" id="bar" aria-hidden="true"></div>
+    </div>
+  </header>
+  <div class="summary" id="summary" hidden></div>
+  <nav class="filters" id="filters" aria-label="Filtres"></nav>
+  <main id="main"></main>
+  <section class="notes" aria-labelledby="gen">
+    <h2 id="gen">Remarques générales</h2>
+    <label for="free-note" class="count">Sur la revue, l'outil, le parcours : tout ce qui ne tient pas dans une fiche.</label>
+    <textarea id="free-note" rows="4"></textarea>
+  </section>
+</div>
+<dialog id="zoom" aria-label="Capture agrandie"></dialog>
+
+<script>
+const DATA = __DATA__;
+const IMG = __IMG__;
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const GRAV = { bloquant: 'Bloquant', important: 'Important', mineur: 'Mineur', 'a-trancher': 'À trancher', info: 'Info' };
+const PRIO = { forte: 'Priorité forte', moyenne: 'Priorité moyenne', faible: 'Priorité faible', decider: 'À décider' };
+const STATUS = { inclure: 'Inclure', 'plus-tard': 'Plus tard', exclure: 'Exclure' };
+const REG = { nouveau: 'Nouveau', 'toujours-la': 'Toujours là', reapparu: 'Réapparu', corrige: 'Corrigé', 'non-verifie': 'Non vérifié' };
+const PLATFORM = Object.fromEntries(DATA.platforms.map((p) => [p.kind, p.title]));
+const FICHE = Object.fromEntries(DATA.fiches.map((f) => [f.id, f]));
+const state = {};
+for (const [id, d] of Object.entries(DATA.decisions || {})) state[id] = { ...d };
+// Section de chaque fiche : selon la décision prise AVANT cette revue (une fiche qu'on exclut maintenant
+// reste à sa place jusqu'à la prochaine revue, pour ne pas sauter sous les yeux).
+let initial = {};
+const snapshot = () => { initial = JSON.parse(JSON.stringify(state)); };
+snapshot();
+let store = null, db = null;
+const filter = { kind: '', gravity: '', priority: '', screen: '', size: '', decision: '' };
+let capKind = DATA.platforms[0]?.kind;
+const pathSize = {};
+
+document.getElementById('title').textContent = `Passage ${DATA.profile === 'complet' ? 'complet' : DATA.profile === 'rapide' ? 'rapide' : ''} du ${DATA.date?.split(' ')[0] || ''}`.replace('  ', ' ');
+if (DATA.summary) { const el = document.getElementById('summary'); el.hidden = false; el.innerHTML = `<b>Synthèse de la relecture</b>\n${esc(DATA.summary)}`; }
+
+/** Décision d'une fiche : celle de tous ses défauts, 'mixte' s'ils diffèrent. */
+function statusOf(f, from = state) {
+  const all = [...new Set(f.ids.map((id) => from[id]?.status || null))];
+  return all.length === 1 ? all[0] : 'mixte';
+}
+const noteOf = (f) => [...new Set(f.ids.map((id) => state[id]?.note).filter(Boolean))].join(' / ');
+function sectionOf(f) {
+  if (f.faux) return 'ecartes';
+  if (f.family.info) return 'info';
+  const d = statusOf(f, initial);
+  return d === 'exclure' ? 'exclus' : d === 'plus-tard' ? 'plus-tard' : 'defauts';
+}
+function visible(f) {
+  if (filter.kind && !f.platforms.includes(filter.kind)) return false;
+  if (filter.gravity && f.gravity !== filter.gravity) return false;
+  if (filter.priority && f.priority.level !== filter.priority) return false;
+  if (filter.screen && !f.screens.includes(filter.screen)) return false;
+  if (filter.size && !f.sizes.includes(filter.size)) return false;
+  if (filter.decision) { const d = statusOf(f); if (filter.decision === 'aucune' ? d : d !== filter.decision) return false; }
+  return true;
+}
+
+// Une capture est une zone d'une planche d'images : { f: fichier, x, y, w, h, W, H } (pixels).
+function sprite(m, label, big) {
+  const pos = (o, sz, S) => (S === sz ? 0 : (o / (S - sz)) * 100);
+  const width = big ? `width:min(96vw, calc(88vh * ${m.w} / ${m.h}));` : '';
+  return `<span class="spr" role="img" aria-label="${esc(label)}" style="${width}aspect-ratio:${m.w} / ${m.h};background-image:url('${esc(m.f)}');background-size:${(m.W / m.w) * 100}% ${(m.H / m.h) * 100}%;background-position:${pos(m.x, m.w, m.W)}% ${pos(m.y, m.h, m.H)}%"></span>`;
+}
+function thumb(ex, kind, big) {
+  if (!ex) return `<div class="thumb ${kind}"><div class="none">Pas de capture publiée (zone sensible)</div></div>`;
+  const src = ex.img && IMG[ex.img];
+  const boxes = (ex.boxes || []).map((b) => `<span class="box ${ex.sev || ''}" style="left:${b[0]}%;top:${b[1]}%;width:${b[2]}%;height:${b[3]}%"></span>`).join('');
+  const media = src ? sprite(src, ex.label, big) : `<div class="none">Capture indisponible</div>`;
+  return `<button type="button" class="thumb ${kind}" data-zoom="${esc(JSON.stringify({ img: ex.img, label: ex.label, boxes: ex.boxes || [], sev: ex.sev || '', kind }))}" aria-label="${big ? 'Fermer' : 'Agrandir : ' + esc(ex.label)}">${media}${boxes}</button>`;
+}
+
+function decision(f) {
+  const st = statusOf(f);
+  const off = store ? '' : 'disabled';
+  return `<div class="dec">
+    <div class="dec-btns" role="group" aria-label="Décision">${Object.entries(STATUS).map(([v, l]) => `<button type="button" class="opt" data-f="${f.id}" data-v="${v}" aria-pressed="${st === v}" ${off}>${l}</button>`).join('')}</div>
+    ${st === 'mixte' ? '<span class="mixed">Décisions différentes selon la plateforme : un choix ici vaut pour toutes.</span>' : ''}
+    ${f.ids.length > 1 ? `<span class="count" style="font-size:0.76rem">Vaut pour ${f.ids.length} défauts (${f.platforms.map((k) => PLATFORM[k]).join(', ')})</span>` : ''}
+    <label class="count" for="n-${f.id}" style="font-size:0.8rem">Remarque</label>
+    <textarea id="n-${f.id}" data-fnote="${f.id}" rows="1" ${off}>${esc(noteOf(f))}</textarea>
+  </div>`;
+}
+
+function regStatus(f) {
+  const st = [...new Set(f.parts.map((p) => p.status).filter(Boolean))];
+  if (!st.length) return '';
+  if (st.length === 1) return `<span class="pill st ${st[0]}">${REG[st[0]] || st[0]}</span>`;
+  return f.parts.map((p) => `<span class="pill st ${p.status}">${esc(PLATFORM[p.kind])} : ${REG[p.status] || '?'}</span>`).join(' ');
+}
+
+function ficheCard(f) {
+  const shots = f.parts.filter((p, i) => p.example || i === 0).slice(0, 3)
+    .map((p) => `<figure class="${p.kind}">${thumb(p.example ? { ...p.example, sev: f.sev } : null, p.kind)}${f.parts.length > 1 ? `<figcaption>${esc(PLATFORM[p.kind])}</figcaption>` : ''}</figure>`).join('');
+  const bySize = f.platforms.map((k) => `${PLATFORM[k]} : ${f.parts.filter((p) => p.kind === k).flatMap((p) => p.sizes).join(', ')}`).join(' · ');
+  return `<article class="item" data-status="${esc(statusOf(f) || '')}">
+    <div class="shots">${shots}</div>
+    <div class="it-body">
+      <div class="it-name">${esc(f.name)} <span class="pill ${f.gravity}">${GRAV[f.gravity]}</span>${f.gravity === 'info' ? '' : `<span class="pill prio ${f.priority.level}">${PRIO[f.priority.level]}</span>`}${regStatus(f)}${f.etat ? `<span class="pill etat ${/vérifier/i.test(f.etat) ? 'verifier' : ''}">${esc(f.etat)}</span>` : ''}</div>
+      <div class="chips">${f.platforms.map((k) => `<span class="plat">${esc(PLATFORM[k])}</span>`).join('')}${f.group ? `<span class="chip">Regroupe ${f.group.n} défauts (même cause)</span>` : ''}</div>
+      ${f.priority.why && f.gravity !== 'info' ? `<div class="it-prio">${esc(f.priority.why)}</div>` : ''}
+      <div class="it-msg">${f.messages.map(esc).join(' · ')}</div>
+      <div class="it-where">${esc(bySize)}</div>
+      <div class="it-where">${f.screens.length} écran${f.screens.length > 1 ? 's' : ''} : ${esc(f.screens.slice(0, 6).join(', '))}${f.screens.length > 6 ? '…' : ''}</div>
+      ${f.advice ? `<div class="it-advice">${esc(f.advice)}</div>` : ''}
+      ${f.avis || f.reco ? `<div class="verdict">${f.avis ? `<p><b>Le souci</b>${esc(f.avis)}</p>` : ''}${f.reco ? `<p class="reco"><b>Recommandation${f.effort ? ` · effort ${esc(f.effort)}` : ''}</b>${esc(f.reco)}</p>` : ''}</div>` : ''}
+      ${f.faux ? `<div class="verdict"><p><b>Écarté à la relecture</b>${esc(f.faux)}</p></div>` : ''}
+    </div>
+    ${f.faux ? '<div></div>' : decision(f)}
+  </article>`;
+}
+
+function familyBlock(fam, list, bulk) {
+  return `<article class="family">
+    <div class="fam-head"><h3>${esc(fam.title)}</h3><span class="count">${list.length} fiche${list.length > 1 ? 's' : ''}</span></div>
+    <div class="advice"><b>À obtenir</b>${esc(fam.advice)}</div>
+    ${bulk && list.length > 1 ? `<div class="fam-actions">Toutes les fiches affichées de la famille : ${Object.entries(STATUS).map(([v, l]) => `<button type="button" class="opt" data-fam="${esc(fam.rule)}" data-v="${v}" ${store ? '' : 'disabled'}>${l}</button>`).join('')}</div>` : ''}
+    <div class="items">${list.map(ficheCard).join('')}</div>
+  </article>`;
+}
+
+function folded(id, title, hint, list, open) {
+  if (!list.length) return '';
+  return `<section aria-labelledby="${id}"><div class="sec-head"><h2 id="${id}">${title}</h2><p>${hint}</p></div>
+    <details class="more" ${open ? 'open' : ''}><summary>${list.length} fiche${list.length > 1 ? 's' : ''}</summary><div class="items" style="margin-top:10px">${list.map(ficheCard).join('')}</div></details></section>`;
+}
+
+function renderFilters() {
+  const opts = (name, label, values) => `<label>${label}<select data-filter="${name}"><option value="">Tout</option>${values.map(([v, l]) => `<option value="${esc(v)}" ${filter[name] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+  const uniq = (arr) => [...new Set(arr)].sort((a, b) => a.localeCompare(b, 'fr'));
+  const pool = DATA.fiches.filter((f) => !f.faux && !f.family.info);
+  document.getElementById('filters').innerHTML = [
+    DATA.platforms.length > 1 ? opts('kind', 'Plateforme', DATA.platforms.map((p) => [p.kind, p.title])) : '',
+    opts('gravity', 'Gravité', Object.entries(GRAV).filter(([k]) => k !== 'info')),
+    opts('priority', 'Priorité', Object.entries(PRIO)),
+    opts('screen', 'Écran', uniq(pool.flatMap((f) => f.screens)).map((s) => [s, s])),
+    opts('size', 'Taille', uniq(pool.flatMap((f) => f.sizes)).map((s) => [s, s])),
+    opts('decision', 'Décision', [['aucune', 'Sans décision'], ...Object.entries(STATUS)]),
+    '<span class="count shown" id="shown"></span>',
+  ].join('');
+}
+
+function render() {
+  const active = document.activeElement?.id;
+  const bySection = { defauts: [], 'plus-tard': [], exclus: [], ecartes: [], info: [] };
+  for (const f of DATA.fiches) if (visible(f)) bySection[sectionOf(f)].push(f);
+  const main = DATA.families.filter((x) => !x.info).map((fam) => [fam, bySection.defauts.filter((f) => f.family.rule === fam.rule)]).filter(([, l]) => l.length);
+  const info = DATA.families.filter((x) => x.info).flatMap((fam) => bySection.info.filter((f) => f.family.rule === fam.rule));
+  document.getElementById('shown').textContent = `${bySection.defauts.length} fiche${bySection.defauts.length > 1 ? 's' : ''} à trancher affichée${bySection.defauts.length > 1 ? 's' : ''}`;
+  const p = DATA.platforms.find((x) => x.kind === capKind);
+  document.getElementById('main').innerHTML = `
+    <section aria-labelledby="d"><div class="sec-head"><h2 id="d">Défauts à trancher</h2><p>Grille fixe : famille, puis gravité, priorité, plateformes, écrans</p></div>
+      ${main.map(([fam, list]) => familyBlock(fam, list, true)).join('') || '<p class="count">Aucun défaut avec ces filtres.</p>'}</section>
+    ${DATA.fixed?.length ? `<section aria-labelledby="c"><div class="sec-head"><h2 id="c">Corrigés depuis le passage précédent</h2><p>Leur lieu a été repassé sans les retrouver</p></div><div class="fixed-list">${DATA.fixed.map((x) => `<p>✓ ${esc(x.name)} (${esc(x.platform || x.kind)}${x.lot ? ` · ${esc(x.lot)}` : ''})</p>`).join('')}</div></section>` : ''}
+    ${folded('pt', 'Plus tard', 'Décidé avant cette revue : rangé à part, à reprendre quand vous voulez', bySection['plus-tard'])}
+    ${folded('ex', 'Exclus', 'Décidé avant cette revue : ne revient plus parmi les défauts à trancher', bySection.exclus)}
+    ${folded('fx', 'Écartés à la relecture', 'Faux positifs de la mesure, avec leur raison (mémorisés : ils ne seront plus signalés)', bySection.ecartes)}
+    ${folded('in', 'Pour information', 'Pas des défauts en soi, à regarder', info)}
+    ${p ? `<section aria-labelledby="cap"><div class="sec-head"><h2 id="cap">Captures</h2><p>Chaque écran à toutes les tailles, et le parcours complet</p></div>
+      ${DATA.platforms.length > 1 ? `<div class="tabs" role="tablist" aria-label="Plateforme">${DATA.platforms.map((x) => `<button type="button" class="tab" role="tab" aria-selected="${x.kind === capKind}" data-cap="${x.kind}">${esc(x.title)}</button>`).join('')}</div>` : ''}
+      ${compareTable(p)}${pathView(p)}
+      ${p.skipped.length ? `<div class="skipped"><h3>Non atteints</h3>${p.skipped.map((s) => `<p><b>${esc(s.label)}</b> (${esc(s.size)}) — ${esc(s.why)}</p>`).join('')}</div>` : ''}
+    </section>` : ''}`;
+  if (active && document.getElementById(active)) document.getElementById(active).focus();
+  const free = document.getElementById('free-note');
+  if (document.activeElement !== free) free.value = state.libre?.note || '';
+  free.disabled = !store;
+  progress();
+}
+
+function compareTable(p) {
+  if (!p.compare.length || p.sizes.length < 2) return '';
+  return `<div class="compare ${p.kind}"><table><thead><tr><th>Écran</th>${p.sizes.map((s) => `<th>${esc(s)}</th>`).join('')}</tr></thead><tbody>
+    ${p.compare.map((c) => `<tr><td class="name">${esc(c.label)}</td>${p.sizes.map((s) => `<td>${c.cells[s] ? thumb(c.cells[s].img ? { img: c.cells[s].img, label: `${c.label} (${s})` } : null, p.kind) : ''}</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+/** Parcours d'une taille : toutes ses captures dans l'ordre du passage ; les doublons sont estompés. */
+function pathView(p) {
+  if (!p.paths?.length) return '';
+  const size = p.paths.some((x) => x.size === pathSize[p.kind]) ? pathSize[p.kind] : p.paths[0].size;
+  const shots = p.paths.find((x) => x.size === size).shots;
+  const w = p.paths.find((x) => x.size === size);
+  const same = shots.filter((x) => x.same).length;
+  const meta = [`${shots.filter((x) => !x.missing).length} captures`, same ? `${same} identiques à une autre (estompées)` : '',
+    w.duration != null ? `${w.duration} min` : '', w.retried ? 'refaite après redémarrage de l\'émulateur' : '', w.restarts ? `app relancée ${w.restarts} fois` : ''].filter(Boolean).join(' · ');
+  return `<div class="path-sizes" role="group" aria-label="Taille">${p.paths.map((x) => `<button type="button" class="opt" data-path="${esc(x.size)}" aria-pressed="${x.size === size}">${esc(x.size)}</button>`).join('')}</div>
+    <p class="path-meta">${esc(meta)}</p>
+    <details class="more" id="pd-${p.kind}"><summary>Parcours complet en ${esc(size)}</summary><div class="path-grid ${p.kind}" style="margin-top:10px">
+    ${shots.map((x) => (x.missing ? `<figure class="missing"><b>${esc(x.label)}</b><br>${esc(x.missing)}</figure>`
+      : `<figure class="${x.same ? 'same' : ''}">${thumb(x.img ? { img: x.img, label: `${x.label} (${size})` } : null, p.kind)}<figcaption>${esc(x.label)}${x.issues ? ` <span class="n">· ${x.issues} constat${x.issues > 1 ? 's' : ''}</span>` : ''}${x.same ? `<i>${esc(x.same)}</i>` : ''}${x.note ? `<i>${esc(x.note)}</i>` : ''}</figcaption></figure>`)).join('')}
+    </div></details>`;
+}
+
+function progress() {
+  const list = DATA.fiches.filter((f) => sectionOf(f) === 'defauts');
+  const c = { inclure: 0, 'plus-tard': 0, exclure: 0 };
+  for (const f of list) { const s = statusOf(f); if (c[s] != null) c[s]++; }
+  const done = c.inclure + c['plus-tard'] + c.exclure;
+  document.getElementById('count').textContent = `${done} / ${list.length} fiches tranchées · ${c.inclure} à corriger, ${c['plus-tard']} plus tard, ${c.exclure} exclues`;
+  const seg = (n, v) => (n && list.length ? `<span style="width:${(n / list.length) * 100}%;background:var(${v})"></span>` : '');
+  document.getElementById('bar').innerHTML = seg(c.inclure, '--ok') + seg(c['plus-tard'], '--later') + seg(c.exclure, '--out');
+}
+
+const API = { headers: { 'X-Audit-Revue': '1', 'Content-Type': 'application/json' } };
+/** Enregistre un changement pour un ou plusieurs défauts (identifiants du registre). */
+async function write(ids, patch) {
+  const now = new Date().toISOString();
+  for (const i of ids) state[i] = { ...(state[i] || {}), ...patch, updatedAt: now };
+  const s = document.getElementById('dbstate');
+  if (store === 'serveur') {
+    try {
+      const r = await fetch('/api/decisions', { method: 'POST', ...API, body: JSON.stringify({ decisions: Object.fromEntries(ids.map((i) => [i, state[i]])) }) });
+      if (!r.ok) throw new Error(r.status);
+      s.textContent = 'Enregistré dans le passage et le registre.';
+    } catch { s.textContent = 'Échec de l’enregistrement : la revue locale est-elle toujours ouverte ?'; }
+  } else if (store === 'local') {
+    try { localStorage.setItem('audit-revue-decisions', JSON.stringify(state)); }
+    catch { s.textContent = 'Échec de l’enregistrement dans ce navigateur : exportez vos décisions.'; }
+  } else if (store === 'db') {
+    for (const i of ids) {
+      try { await db.collection('decisions').doc(i).set(state[i]); }
+      catch (e) { s.textContent = `Échec de l'enregistrement (${e?.code || 'erreur'}) : réessayez dans un instant.`; }
+    }
+  }
+}
+
+document.addEventListener('change', (e) => {
+  const name = e.target.dataset?.filter;
+  if (!name) return;
+  filter[name] = e.target.value;
+  render();
+});
+
+document.addEventListener('click', async (e) => {
+  const cap = e.target.closest('[data-cap]');
+  if (cap) { capKind = cap.dataset.cap; render(); return; }
+  const ps = e.target.closest('[data-path]');
+  if (ps) { pathSize[capKind] = ps.dataset.path; render(); document.getElementById(`pd-${capKind}`)?.setAttribute('open', ''); return; }
+  const opt = e.target.closest('.opt[data-f], .opt[data-fam]');
+  if (opt && !opt.disabled) {
+    const v = opt.dataset.v;
+    if (opt.dataset.fam) {
+      const list = DATA.fiches.filter((f) => f.family.rule === opt.dataset.fam && sectionOf(f) === 'defauts' && visible(f));
+      const ids = list.flatMap((f) => f.ids);
+      render();
+      await write(ids, { status: v });
+    } else {
+      const f = FICHE[opt.dataset.f];
+      await write(f.ids, { status: statusOf(f) === v ? null : v });
+    }
+    render();
+    return;
+  }
+  const z = e.target.closest('[data-zoom]');
+  const dlg = document.getElementById('zoom');
+  if (z && !dlg.open) {
+    const ex = JSON.parse(z.dataset.zoom);
+    // Version nette de l'image (img/grand/), avec les cadres des constats par-dessus ; sinon la vignette.
+    const g = IMG[ex.img]?.g;
+    dlg.innerHTML = g
+      ? `<div class="thumb grand" style="cursor:zoom-out"><img src="${esc(g)}" alt="${esc(ex.label)}">${(ex.boxes || []).map((b) => `<span class="box ${ex.sev || ''}" style="left:${b[0]}%;top:${b[1]}%;width:${b[2]}%;height:${b[3]}%"></span>`).join('')}</div><p>${esc(ex.label)}</p>`
+      : `${thumb(ex, ex.kind, true)}<p>${esc(ex.label)}</p>`;
+    dlg.showModal();
+    return;
+  }
+  if (dlg.open && (e.target === dlg || e.target.closest('dialog .thumb'))) dlg.close();
+});
+
+// Export : { id: { status, note, updatedAt } } (même format que decisions.json), pour « node audit decisions ».
+document.getElementById('export').addEventListener('click', async () => {
+  const out = Object.fromEntries(Object.entries(state).filter(([, d]) => d && (d.status || d.note)));
+  const filename = `decisions-${(DATA.date || '').split(' ')[0].replace(/\//g, '-') || 'revue'}.json`;
+  const text = JSON.stringify(out, null, 1);
+  const s = document.getElementById('dbstate');
+  let downloads = null;
+  try { downloads = await window.claude?.use?.('downloads'); } catch { downloads = null; }
+  if (downloads) {
+    try { await downloads.save({ filename, data: text }); s.textContent = 'Décisions exportées.'; }
+    catch (e) { s.textContent = e?.code === 'declined' ? 'Export annulé.' : `Export impossible (${e?.code || 'erreur'}).`; }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  s.textContent = `Décisions exportées (${filename}).`;
+});
+
+// Remarques : envoyées après un court délai de frappe ; celles en attente partent avant « J'ai terminé ».
+const timers = {}, pending = {};
+document.addEventListener('input', (e) => {
+  const fid = e.target.dataset?.fnote;
+  const key = fid || (e.target.id === 'free-note' ? 'libre' : null);
+  if (!key || !store) return;
+  const ids = fid ? FICHE[fid].ids : ['libre'];
+  const value = e.target.value;
+  clearTimeout(timers[key]);
+  pending[key] = () => { delete pending[key]; return write(ids, { note: value }); };
+  timers[key] = setTimeout(() => pending[key]?.(), 800);
+});
+
+renderFilters();
+render();
+(async () => {
+  const s = document.getElementById('dbstate');
+  const merge = (decisions) => { for (const [id, d] of Object.entries(decisions || {})) if (!state[id]?.updatedAt || (d.updatedAt || '') >= state[id].updatedAt) state[id] = d; };
+  // Revue locale (node audit revue) : les décisions vont au fichier du passage et au registre.
+  if (location.protocol.startsWith('http') && !window.claude) {
+    try {
+      const r = await fetch('/api/etat', API);
+      if (r.ok) {
+        merge((await r.json()).decisions);
+        snapshot();
+        store = 'serveur';
+        s.textContent = 'Revue locale : chaque choix est enregistré aussitôt dans le passage et le registre.';
+        const done = document.getElementById('done');
+        done.hidden = false;
+        done.addEventListener('click', async () => {
+          for (const k of Object.keys(pending)) { clearTimeout(timers[k]); await pending[k]?.(); }
+          await fetch('/api/fin', { method: 'POST', ...API }).catch(() => {});
+          store = null;
+          done.hidden = true;
+          render();
+          s.textContent = 'Revue terminée : vos décisions sont enregistrées. Vous pouvez fermer cette page.';
+        });
+        render();
+        return;
+      }
+    } catch { /* pas de revue locale : page publiée ou fichier */ }
+  }
+  try { db = await window.claude?.use?.('db'); } catch { db = null; }
+  if (!db) {
+    // Page ouverte depuis le disque : les choix restent dans ce navigateur, à exporter pour le registre.
+    try {
+      merge(JSON.parse(localStorage.getItem('audit-revue-decisions') || '{}'));
+      snapshot();
+      store = 'local';
+      s.textContent = 'Choix gardés dans ce navigateur : exportez-les pour le registre.';
+    } catch { s.textContent = 'Lecture seule : l’enregistrement n’est pas disponible ici.'; }
+    render();
+    return;
+  }
+  store = 'db';
+  s.textContent = 'Choix enregistrés automatiquement. Quand vous avez fini, signalez-le simplement : ils seront reportés dans le registre du projet.';
+  let first = true;
+  db.collection('decisions').onSnapshot((snap) => {
+    for (const d of snap.docs) state[d.id] = { ...d.data() };
+    if (first) { snapshot(); first = false; }
+    if (document.activeElement?.tagName !== 'TEXTAREA') render(); else progress();
+  }, () => { s.textContent = 'Enregistrement indisponible : rechargez la page.'; });
+  render();
+})();
+</script>
+</html>

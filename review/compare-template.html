@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avant / après __APP__</title>
+<style>
+/*__THEME__*/
+.stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 130px; }
+.stat b { display: block; font-size: 1.5rem; }
+.stat span { color: var(--muted); font-size: 0.85rem; }
+.target { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 6px; }
+/* Fiche d'un défaut du lot : captures nettes, défaut encadré, zone agrandie, explications */
+.cible { gap: 10px; }
+.cible .where { color: var(--muted); font-size: 0.86rem; }
+.cible-sides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cible.phone .cible-sides { grid-template-columns: repeat(2, minmax(0, 300px)); }
+.big { display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; cursor: zoom-in; }
+.big img { display: block; width: 100%; height: auto; }
+.big.zoomed { margin-top: 8px; }
+.facts { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 8px; }
+.facts p { font-size: 0.9rem; color: var(--soft); white-space: pre-line; }
+.facts b { display: block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.facts .reco { color: var(--ink); }
+dialog > img { display: block; max-width: 96vw; max-height: 88vh; margin: 0 auto; }
+.target h3 { font-size: 1.05rem; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.note { color: var(--soft); font-size: 0.9rem; font-style: italic; }
+.pill { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.corrige { color: var(--ok); } .pill.toujours-la { color: var(--err); } .pill.non-verifie { color: var(--muted); } .pill.a-verifier, .pill.a-confirmer { color: var(--warn); }
+.alert { border: 1px solid var(--err); background: color-mix(in srgb, var(--err) 8%, var(--panel)); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; }
+.alert h2 { font-size: 1.15rem; color: var(--err); }
+.caution { border: 1px solid var(--warn); border-radius: 12px; padding: 10px 14px; color: var(--soft); }
+.lost { color: var(--warn); font-size: 0.9rem; }
+.same-list { display: grid; gap: 4px; color: var(--soft); font-size: 0.86rem; }
+.spotted { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; }
+.spotted h3 { font-size: 1.02rem; }
+.spotted p { color: var(--soft); font-size: 0.9rem; }
+.spotted b { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; display: block; }
+dialog .spr { cursor: zoom-out; }
+.pair { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.pair.changed { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.pair-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.pair-head h3 { font-size: 1rem; }
+.chip.hot { background: var(--accent-soft); color: var(--accent); border-color: currentColor; }
+.also { color: var(--muted); font-size: 0.84rem; }
+.sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pair.phone .sides { grid-template-columns: repeat(2, minmax(0, 220px)); }
+@media (max-width: 640px) { .sides, .pair.phone .sides { grid-template-columns: minmax(0, 1fr); } }
+figure { margin: 0; display: grid; gap: 4px; }
+figcaption { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.none { display: grid; place-items: center; aspect-ratio: 16 / 10; color: var(--muted); font-size: 0.85rem; padding: 12px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+.pair.phone .none { aspect-ratio: 9 / 16; }
+.diffs { display: grid; gap: 4px; font-size: 0.88rem; }
+.gone { color: var(--ok); } .new { color: var(--err); }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">__APP__ · avant / après d'une correction</span>
+    <h1 id="title">Avant / après</h1>
+    <p class="lede" id="lede"></p>
+    <div class="stats" id="stats"></div>
+  </header>
+  <main id="main"></main>
+</div>
+<dialog id="zoom" aria-label="Capture agrandie"></dialog>
+
+<script>
+const DATA = __DATA__;
+const IMG = __IMG__;
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STATUS = { corrige: 'Corrigé', 'toujours-la': 'Toujours là', 'non-verifie': 'Non vérifié', 'a-verifier': 'À vérifier', 'a-confirmer': 'À confirmer à l’œil' };
+const PLATFORM = { tv: 'TV', phone: 'Téléphone', desktop: 'Bureau', web: 'Web' };
+
+// Une capture est une zone d'une planche d'images : { f: fichier, x, y, w, h, W, H } (pixels).
+function sprite(m, label, big) {
+  const pos = (o, sz, S) => (S === sz ? 0 : (o / (S - sz)) * 100);
+  const width = big ? `width:min(96vw, calc(86vh * ${m.w} / ${m.h}));` : '';
+  return `<span class="spr" role="img" aria-label="${esc(label)}" style="${width}aspect-ratio:${m.w} / ${m.h};background-image:url('${esc(m.f)}');background-size:${(m.W / m.w) * 100}% ${(m.H / m.h) * 100}%;background-position:${pos(m.x, m.w, m.W)}% ${pos(m.y, m.h, m.H)}%"></span>`;
+}
+
+if (DATA.titre) document.getElementById('title').textContent = `Avant / après · ${DATA.titre}`;
+document.getElementById('lede').textContent = `Passage avant (${DATA.before.date}) et passage après (${DATA.after.date}), sur les mêmes écrans et tailles. Les captures qui changent viennent en premier, chacune une seule fois ; « image changée » est la part des pixels qui diffèrent.`;
+document.getElementById('stats').innerHTML = [
+  [DATA.totals.pairs, 'captures comparées'], [DATA.totals.changed, 'changées'],
+  [DATA.totals.gone, 'constats disparus'], [DATA.totals.new, 'constats apparus'], [DATA.totals.lost || 0, 'états perdus'],
+].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+
+const side = (s, tag, label) => `<figure><figcaption>${tag}</figcaption>${s.img
+  ? `<button type="button" class="thumb" data-zoom="${esc(s.img)}" data-label="${esc(label + ' · ' + tag)}">${IMG[s.img] ? sprite(IMG[s.img], label + ' · ' + tag) : ''}</button>`
+  : `<div class="none">${s.skipped ? `Écran non atteint : ${esc(s.skipped)}` : 'Pas de capture publiée (zone sensible)'}</div>`}</figure>`;
+
+function pairCard(p) {
+  const chips = [`<span class="chip">${esc(PLATFORM[p.kind] || p.kind)} · ${esc(p.size)}</span>`];
+  if (p.reached) chips.push(p.reached === 'perdu-constate' ? `<span class="chip">État disparu, jugé normal par l’interprète : ${esc(p.lostWhy)}</span>` : `<span class="chip hot">${p.reached === 'atteint' ? 'Écran atteint après' : 'État perdu après : régression'}</span>`);
+  if (p.diff !== null) chips.push(`<span class="chip ${p.diff >= 2 ? 'hot' : ''}">Image changée : ${p.diff} %</span>`);
+  const list = (arr, cls, word) => arr.map((i) => `<p class="${cls}">${word} ${esc(i.el)} — ${esc(i.message)}</p>`).join('');
+  return `<article class="pair ${p.kind} ${p.changed ? 'changed' : ''}">
+    <div class="pair-head"><h3>${esc(p.label)}</h3>${chips.join('')}</div>
+    ${p.also?.length ? `<p class="also">Même changement aussi : ${esc(p.also.join(', '))}</p>` : ''}
+    <div class="sides">${side(p.before, 'Avant', p.label)}${side(p.after, 'Après', p.label)}</div>
+    ${p.gone.length || p.new.length ? `<div class="diffs">${list(p.gone, 'gone', '✓ Disparu :')}${list(p.new, 'new', '✗ Apparu :')}</div>` : ''}
+  </article>`;
+}
+
+/**
+ * Fiche d'un défaut du lot : avant (défaut encadré en rouge) et après (même zone, en vert si le défaut a
+ * disparu, en rouge s'il est encore là), agrandissement de la zone, le souci, ce qui a été changé, le verdict.
+ */
+function cibleCard(t) {
+  const shot = (side, tag) => (side ? `<figure><figcaption>${tag}</figcaption>
+      <button type="button" class="big" data-full="${esc(side.full)}" data-label="${esc(`${t.name} · ${tag}`)}"><img src="${esc(side.full)}" alt="${esc(`${t.name} · ${tag}`)}" loading="lazy"></button>
+      ${side.zoom ? `<button type="button" class="big zoomed" data-full="${esc(side.zoom)}" data-label="${esc(`${t.name} · ${tag} (zone agrandie)`)}"><img src="${esc(side.zoom)}" alt="${esc(`${t.name} · ${tag} · zone agrandie`)}" loading="lazy"></button>` : ''}
+    </figure>` : '');
+  const where = [PLATFORM[t.kind] || t.kind, t.size, t.screen].filter(Boolean).join(' · ');
+  return `<article class="target cible ${t.kind}">
+    <h3>${esc(t.name)} <span class="pill ${t.status}">${STATUS[t.status] || t.status}</span></h3>
+    <p class="where">${esc(where)}</p>
+    ${t.img ? `<div class="sides cible-sides">${shot(t.img.avant, 'Avant')}${shot(t.img.apres, 'Après')}</div>` : `<p class="note">${esc(t.why || 'Pas de capture.')}</p>`}
+    <div class="facts">
+      ${t.avis || t.before?.length ? `<p><b>Le souci</b>${esc(t.avis || t.before.join(' · '))}</p>` : ''}
+      ${t.before?.length && t.avis ? `<p><b>Mesuré avant</b>${esc(t.before.join(' · '))}</p>` : ''}
+      ${t.afterScreen ? `<p class="note"><b>Capture « après »</b>l’état « ${esc(t.screen)} » n’est plus atteint : c’est l’écran « ${esc(t.afterScreen)} » qui est montré</p>` : ''}
+      <p><b>Mesuré après</b>${t.after?.length ? esc(t.after.join(' · ')) : t.img ? 'plus relevé sur cette capture' : '—'}</p>
+      ${t.correction ? `<p class="reco"><b>Ce qui a été changé</b>${esc(t.correction)}</p>` : '<p class="note"><b>Ce qui a été changé</b>non renseigné (corrections.json du cycle)</p>'}
+      ${t.oeil ? `<p><b>Constaté à l’œil</b>${esc(t.oeil)}</p>` : ''}
+      ${t.lost?.length ? `<p class="lost">Plus atteint après la correction : ${esc(t.lost.join(', '))}</p>` : ''}
+      ${t.note ? `<p class="note">Votre remarque : « ${esc(t.note)} »</p>` : ''}
+    </div>
+  </article>`;
+}
+
+const changed = DATA.pairs.filter((p) => p.changed && !p.twinOf), same = DATA.pairs.filter((p) => !p.changed);
+const lostPairs = DATA.pairs.filter((p) => p.reached === 'perdu');
+const spottedCard = (r) => `<article class="spotted"><h3>${esc(r.titre)}</h3>${r.texte ? `<p>${esc(r.texte)}</p>` : ''}${r.reco ? `<p><b>Recommandation</b>${esc(r.reco)}</p>` : ''}</article>`;
+document.getElementById('main').innerHTML = `
+  ${DATA.mesureNote ? `<p class="caution">${esc(DATA.mesureNote)}</p>` : ''}
+  ${DATA.summary ? `<section class="summary" aria-label="Synthèse">${esc(DATA.summary)}</section>` : ''}
+  ${lostPairs.length ? `<section class="alert" aria-labelledby="l"><h2 id="l">Régression : ${lostPairs.length} état${lostPairs.length > 1 ? 's' : ''} perdu${lostPairs.length > 1 ? 's' : ''}</h2><p>Atteint avant la correction, plus après : ${esc(lostPairs.map((p) => `${p.label} (${p.size})`).join(', '))}</p></section>` : ''}
+  <section aria-labelledby="t"><div class="sec-head"><h2 id="t">Défauts visés</h2><p>${DATA.titre ? esc(DATA.titre) : 'Décisions « Inclure » du registre'}</p></div>
+    ${(DATA.cibles || DATA.targets).map(cibleCard).join('') || '<p>Aucun.</p>'}
+  </section>
+  <section aria-labelledby="c"><div class="sec-head"><h2 id="c">Ce qui a changé</h2><p>${changed.length} capture${changed.length > 1 ? 's' : ''} montrée${changed.length > 1 ? 's' : ''}${DATA.totals.changed > changed.length ? ` (${DATA.totals.changed - changed.length} autres changent à l'identique)` : ''}</p></div>
+    ${changed.map(pairCard).join('') || '<p class="note">Rien n\'a changé.</p>'}
+  </section>
+  ${DATA.spotted?.length ? `<section aria-labelledby="r"><div class="sec-head"><h2 id="r">Repéré en chemin, non corrigé</h2><p>Hors du lot : à vous de décider (inclure dans un prochain lot, plus tard, exclure)</p></div>${DATA.spotted.map(spottedCard).join('')}</section>` : ''}
+  ${DATA.outil?.length ? `<section aria-labelledby="o"><div class="sec-head"><h2 id="o">Côté outil d'audit</h2><p>Failles de l'outil révélées par cet avant / après</p></div>${DATA.outil.map(spottedCard).join('')}</section>` : ''}
+  ${same.length ? `<section aria-labelledby="s"><div class="sec-head"><h2 id="s">Inchangé</h2><p>Aucun constat en plus ou en moins, image quasi identique : la correction n'y a rien cassé</p></div>
+    <details class="more"><summary>Afficher les ${same.length} captures</summary><div class="same-list" style="margin-top:10px">${same.map((p) => `<p>${esc(p.label)} (${esc(PLATFORM[p.kind] || p.kind)} · ${esc(p.size)})${p.diff !== null ? ` · image changée : ${p.diff} %` : ''}</p>`).join('')}</div></details></section>` : ''}`;
+
+document.addEventListener('click', (e) => {
+  const z = e.target.closest('[data-zoom]');
+  const dlg = document.getElementById('zoom');
+  const full = e.target.closest('[data-full]');
+  if (full && !dlg.open) {
+    dlg.innerHTML = `<img src="${esc(full.dataset.full)}" alt="${esc(full.dataset.label)}"><p>${esc(full.dataset.label)}</p>`;
+    dlg.showModal();
+    return;
+  }
+  if (z && !dlg.open) {
+    dlg.innerHTML = `${IMG[z.dataset.zoom] ? sprite(IMG[z.dataset.zoom], z.dataset.label, true) : ''}<p>${esc(z.dataset.label)}</p>`;
+    dlg.showModal();
+    return;
+  }
+  if (dlg.open) dlg.close();
+});
+</script>
+</html>
